@@ -130,9 +130,11 @@ If SYMBOL-NAME is non-nil, jump tag position with SYMBOL-NAME."
                       (if (featurep 'anything-match-plugin) " "))))
          ;;(anything-execute-action-at-once-if-one t)
          )
-    (anything '(anything-c-source-css-select)
-              ;; Initialize input with current symbol
-              initial-pattern "Find Selector: " nil)))
+    (anything :sources '(anything-c-source-css-select)
+              :input initial-pattern ;; Initialize input with current symbol
+              :prompt "Find Selector: "
+              :buffer "*anything-css*"
+              )))
 
 (defun anything-css-from-here ()
   "Find selector with current symbol `anything'."
@@ -189,7 +191,8 @@ returns nil."
         nil
       (if
           (and (executable-find "find") (executable-find "grep"))
-          (with-current-buffer (anything-candidate-buffer (get-buffer-create buffer-name))
+          (with-current-buffer (get-buffer-create buffer-name)
+            (buffer-disable-undo (current-buffer))
             (delete-region (point-min) (point-max))
             (call-process-shell-command
              (concat "find " project-root-dir " -type f -name *.css | xargs grep \"^[[:blank:]]*\\(.*[^ ]\\) *{\" "
@@ -210,7 +213,8 @@ returns nil."
         (get-buffer buffer-name)
       (if (not project-root-dir)
           nil
-        (anything-css--create-buffer)))))
+        (anything-css--create-buffer)
+        (get-buffer buffer-name)))))
 
 (defun anything-css--transformer (candidates)
   (let* (list
@@ -289,7 +293,8 @@ And switch buffer and jump selector position.."
 (defvar anything-c-source-css-select
   '((name . "CSS")
     (header-name . anything-source-css-header-name)
-    (init . anything-css--get-buffer)
+    (init . (lambda ()
+              (anything-candidate-buffer (anything-css--get-buffer))))
     (candidates-in-buffer)
     (get-line . anything-css--get-line)
     (action ("Goto the location" . anything-css--goto-location))
